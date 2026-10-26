@@ -30,7 +30,7 @@ jobs:
           gradle-version: '8.9'
       - name: Build installable debug APK
         working-directory: android
-        run: gradle --no-daemon assembleDebug
+        run: gradle --no-daemon --stacktrace assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: ProjectPrice-Android-debug-APK
