@@ -19,7 +19,7 @@
 <div class="field full"><label for="description">Project requirements / notes</label><textarea id="description" placeholder="Describe your client's requirements, integrations, deadline and deliverables..."></textarea></div></div></section>
 <section class="panel"><h2>02 / Features and scope</h2><div class="features" id="features"></div><p class="note">Feature hours are planning defaults, not universal industry benchmarks. Change your rate and time assumptions below.</p></section>
 <section class="panel"><h2>03 / Pricing assumptions</h2><div class="fields">
-<div class="field"><label for="rate">Hourly labor rate (USD)</label><input type="number" id="rate" min="0" max="10000" step="1" value="20"></div>
+<div class="field"><label for="method">Development method</label><select id="method"><option value="ai" selected>AI-assisted (default)</option><option value="manual">Traditional / manual</option><option value="custom">Use my measured hours</option></select></div><div class="field"><label for="aiFactor">AI-assisted effort (% of baseline)</label><input type="number" id="aiFactor" min="1" max="100" value="30"></div><div class="field"><label for="rate">Hourly labor rate (USD)</label><input type="number" id="rate" min="0" max="10000" step="1" value="12"></div>
 <div class="field"><label for="hours">Additional development hours</label><input type="number" id="hours" min="0" max="100000" step="1" value="0"></div>
 <div class="field"><label for="expenses">Direct expenses (USD)</label><input type="number" id="expenses" min="0" max="10000000" step="1" value="100"></div>
 <div class="field"><label for="risk">Contingency (%)</label><input type="number" id="risk" min="0" max="100" value="15"></div>
@@ -58,7 +58,7 @@ const complexity={simple:.75,standard:1,advanced:1.45,enterprise:2.1};
 const presets={website:['responsive','design','cms','seo','deploy'],ecommerce:['responsive','design','auth','admin','payments','catalog','search','deploy','tests'],saas:['responsive','design','auth','admin','api','analytics','deploy','tests'],mobile:['design','auth','api','upload','tests','deploy'],dashboard:['responsive','design','auth','admin','analytics','deploy'],custom:['responsive','design','auth','api','tests','deploy']};
 const marketNames={bd:'Bangladesh',us:'United States',uk:'United Kingdom',eu:'Europe',me:'Middle East',other:'International'};
 const $=id=>document.getElementById(id);
-const ids=['clientPaste','name','type','market','complexity','currency','description','rate','hours','expenses','risk','margin','hoursWeek','discount','revision','fxBDT','fxGBP','fxEUR','fxAED'];
+const ids=['method','aiFactor','clientPaste','name','type','market','complexity','currency','description','rate','hours','expenses','risk','margin','hoursWeek','discount','revision','fxBDT','fxGBP','fxEUR','fxAED'];
 const features=$('features');let lastText='';let lastHours=0,lastCost=0,lastFinal=0;
 defs.forEach(([id,label,hint,desc])=>{const l=document.createElement('label');l.className='feature';const cb=document.createElement('input');cb.type='checkbox';cb.value=id;cb.id='f_'+id;const t=document.createElement('span');t.textContent=label;const sm=document.createElement('small');sm.textContent=desc+' · '+hint+'h';t.append(sm);l.append(cb,t);features.append(l);cb.addEventListener('change',calculate)});
 const num=(id,min=0,max=10000000)=>{const n=Number($(id).value);return Number.isFinite(n)?Math.min(max,Math.max(min,n)):min};
@@ -69,7 +69,7 @@ const line=(label,value)=>{const d=document.createElement('div');d.className='li
 function calculate(){
 const type=$('type').value,currency=$('currency').value,fx=rateFX(),chosen=selected(),mult=complexity[$('complexity').value],rate=num('rate'),extra=num('hours'),expense=num('expenses'),risk=num('risk',0,100)/100,margin=num('margin',0,80)/100,discount=num('discount',0,80)/100;
 const featureHours=chosen.reduce((a,d)=>a+d[2],0);
-const hours=(base[type]+featureHours)*mult+extra;
+const baseline=(base[type]+featureHours)*mult;const factor=$('method').value==='manual'?1:($('method').value==='custom'?0:num('aiFactor',1,100)/100);const hours=baseline*factor+extra;
 const labor=hours*rate;
 const reserve=(labor+expense)*risk;
 const cost=labor+expense+reserve;
@@ -83,7 +83,7 @@ $('range').textContent='Negotiation guide: '+money(final*.9)+' – '+money(final
 $('totalHours').textContent=hours.toFixed(1)+'h';
 $('weeks').textContent=(hours/num('hoursWeek',1,168)).toFixed(1);
 const box=$('breakdown');box.replaceChildren(
-line('Base + feature hours',((base[type]+featureHours)*mult).toFixed(1)+' h'),
+line('Traditional baseline',baseline.toFixed(1)+' h'),line('Development method',$('method').selectedOptions[0].text),line('Adjusted project effort',(baseline*factor).toFixed(1)+' h'),
 line('Additional hours',extra.toFixed(1)+' h'),
 line('Labor cost',money(labor)),
 line('Direct expenses',money(expense)),
@@ -91,7 +91,7 @@ line('Contingency reserve',money(reserve)),
 line('Cost incl. contingency',money(cost)),
 line('Pre-discount quotation',money(list)),
 line('Discount',money(list-final)),
-line('Estimated profit',money(profit)));
+line('Estimated profit',money(profit)),line('Minimum cost-covering quote',money(cost)));
 $('marginNote').textContent=(profit<0?'Warning: your discount produces a loss. ':'')+'Realized margin: '+actualMargin.toFixed(1)+'%. Profit is after labor valued at your rate, direct expenses and contingency; it is not cash-in-hand income. Taxes and transaction fees are excluded.';
 const name=$('name').value.trim()||'Untitled project';
 const featureList=chosen.map(d=>d[1]).join(', ')||'No optional features selected';
